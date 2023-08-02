@@ -1,0 +1,49 @@
+package main
+
+import "fmt"
+
+type Account struct {
+	balance float64
+}
+
+func BankAccount(initialamount float64) *Account {
+	return &Account{balance: initialamount}
+}
+
+func (a *Account) Deposit(depositamount float64) {
+	a.balance += depositamount
+
+}
+
+func (a *Account) Withdraw(withdrawnamount float64, limit float64) {
+	if withdrawnamount >= a.balance && a.balance > limit {
+		fmt.Println("limit of minimum bank amount of 1000 is being set thus if the balance becomes less than 1000 then no amount could be withdrawn")
+		fmt.Println("insufficent amount")
+	} else {
+		a.balance -= withdrawnamount
+	}
+
+}
+func (a *Account) Get() float64 {
+	return a.balance
+}
+
+func main() {
+	var newbalance float64
+	fmt.Println("Enter the amount with which account should be open")
+	fmt.Scanln(&newbalance)
+	var depostiam float64
+	fmt.Println("Amount which should be deposited")
+	fmt.Scanln(&depostiam)
+	var withdrawam float64
+	fmt.Println("amount which the recipient wants to withdrawn")
+	fmt.Scanln(&withdrawam)
+
+	lim := 1000.00
+
+	amount := BankAccount(newbalance)
+	amount.Deposit(depostiam)
+	amount.Withdraw(withdrawam, lim)
+	fmt.Println("Current balance present in the account: %.2f \n ", amount.Get())
+
+}

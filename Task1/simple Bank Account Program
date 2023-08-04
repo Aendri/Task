@@ -6,7 +6,7 @@ type Account struct {
 	balance float64
 }
 
-func BankAccount(initialamount float64) *Account {
+func NewAccount(initialamount float64) *Account {
 	return &Account{balance: initialamount}
 }
 
@@ -41,9 +41,9 @@ func main() {
 
 	lim := 1000.00
 
-	amount := BankAccount(newbalance)
-	amount.Deposit(depostiam)
-	amount.Withdraw(withdrawam, lim)
-	fmt.Println("Current balance present in the account: %.2f \n ", amount.Get())
+	account := NewAccount(newbalance)
+	account.Deposit(depostiam)
+	account.Withdraw(withdrawam, lim)
+	fmt.Println("Current balance present in the account: %.2f \n ", account.Get())
 
 }

@@ -1,0 +1,147 @@
+package main
+
+import (
+	"database/sql"
+	"fmt"
+	"log"
+
+	_ "github.com/mattn/go-sqlite3"
+)
+
+type Account struct {
+	ID        int
+	balance   float64
+	Password  string
+	Holder    string
+	AccountNo string
+}
+
+func createTable(db *sql.DB) {
+	query := `CREATE TABLE IF NOT EXISTS accounts (id INTEGER PRIMARY KEY AUTOINCREMENT, accountno TEXT NOT NULL, holder TEXT NOT NULL, password TEXT NOT NULL, balance REAL NOT NULL)`
+
+	_, err := db.Exec(query)
+	if err != nil {
+		fmt.Println("table exists")
+		log.Fatal("error creating table", err)
+	}
+}
+
+func insertAccount(db *sql.DB, account Account) {
+	query := `INSERT INTO accounts (accountno, holder, password, balance) VALUES (?, ?, ?, ?)`
+	_, err := db.Exec(query, account.AccountNo, account.Holder, account.Password, account.balance)
+	if err != nil {
+		log.Fatal("error inserting the table", err)
+	}
+}
+
+func GetAccount(db *sql.DB, accountNo string, password string) (Account, error) {
+	query := `SELECT id, accountno, holder, balance FROM accounts WHERE accountno = ? AND password = ?`
+
+	row := db.QueryRow(query, accountNo, password)
+
+	var account Account
+	err := row.Scan(&account.ID, &account.AccountNo, &account.Holder, &account.balance)
+	if err != nil {
+		return Account{}, err
+	}
+	return account, nil
+}
+
+func (a *Account) Deposit(depositamount float64) {
+	a.balance += depositamount
+
+}
+
+func (a *Account) Withdraw(withdrawnamount float64, limit float64) {
+	if withdrawnamount >= a.balance && a.balance > limit {
+		fmt.Println("limit of minimum bank amount of 1000 is being set thus if the balance becomes less than 1000 then no amount could be withdrawn")
+		fmt.Println("insufficent amount")
+	} else {
+		a.balance -= withdrawnamount
+	}
+
+}
+
+func (a *Account) Getbalance() float64 {
+	return a.balance
+}
+
+func main() {
+	db, err := sql.Open("sqlite3", "bank.db")
+	if err != nil {
+		log.Fatal("Error opening database:", err)
+	}
+	defer db.Close()
+
+	var user string
+	fmt.Println("enter true if you are already a user, otherwise False")
+	fmt.Scanln(&user)
+	if user == "false" {
+
+		createTable(db)
+		var newaccount string
+		var newbalance float64
+		var HolderName string
+		var password string
+		fmt.Println(" entering the account number, Holders name , balance with which account will be opened, also create the password")
+		fmt.Scanln(&newaccount)
+		fmt.Scanln(&HolderName)
+		fmt.Scanln(&newbalance)
+		fmt.Scanln(&password)
+
+		accountdetails := Account{AccountNo: newaccount, balance: newbalance, Holder: HolderName, Password: password}
+
+		insertAccount(db, accountdetails)
+		acc, err := GetAccount(db, accountdetails.AccountNo, accountdetails.Password)
+		if err != nil {
+			log.Fatal("error in reteriving the account ", err)
+
+		}
+		fmt.Println("Account id", acc.ID)
+		fmt.Println("Account number", acc.AccountNo)
+		fmt.Println("Account holder name", acc.Holder)
+		fmt.Println("Account balance", acc.balance)
+
+	}
+	if user == "true" {
+		fmt.Println("Enter the account number and password to login")
+		var accno string
+		var pass string
+		fmt.Scanln(&accno)
+		fmt.Scanln((&pass))
+
+		accountdetails := Account{AccountNo: accno, Password: pass}
+
+		acc, err := GetAccount(db, accountdetails.AccountNo, accountdetails.Password)
+		if err != nil {
+			log.Fatal("error in reteriving the account ", err)
+		}
+		fmt.Println("Account details ")
+		fmt.Println(acc.ID, acc.AccountNo, acc.Holder, acc.balance)
+		fmt.Println("If you want to check the amount only press(A) or deposit(D) or withdraw(W)")
+
+		var casse string
+		fmt.Scanln(&casse)
+		switch casse {
+		case "A":
+			fmt.Println("Balance present in the account :", acc.Getbalance())
+		case "D":
+			var depostiam float64
+			fmt.Println("Enter the amount")
+			fmt.Scanln(&depostiam)
+			acc.Deposit(depostiam)
+			fmt.Println("Total Amount Present:", acc.Getbalance())
+		case "W":
+			var withdrawn float64
+			fmt.Println("Enter the withdrawn amount")
+			fmt.Scanln(&withdrawn)
+			lim := 1000.00
+			acc.Withdraw(withdrawn, lim)
+			fmt.Println("Total Amount Present:", acc.Getbalance())
+		default:
+			fmt.Println("Try again, unable to process")
+
+		}
+
+	}
+}

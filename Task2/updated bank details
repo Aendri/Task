@@ -47,6 +47,22 @@ func GetAccount(db *sql.DB, accountNo string, password string) (Account, error) 
 	return account, nil
 }
 
+func DeleteAccount(db *sql.DB, accountNo string, password string) error {
+	query := `DELETE FROM accounts WHERE accountNo = ? AND password = ?;`
+	_, err := db.Exec(query, accountNo, password)
+	return err
+}
+func AccountExist(db *sql.DB, accountNo string) bool {
+	query := `SELECT COUNT(*) FROM accounts WHERE accountno = ? ;`
+	var count int
+	err := db.QueryRow(query, accountNo).Scan(&count)
+	if err != nil {
+		log.Fatal("error in checking account existence", err)
+	}
+	return count > 0
+
+}
+
 func (a *Account) Deposit(depositamount float64) {
 	a.balance += depositamount
 
@@ -85,11 +101,18 @@ func main() {
 		var password string
 		fmt.Println(" entering the account number, Holders name , balance with which account will be opened, also create the password")
 		fmt.Scanln(&newaccount)
+
+		if AccountExist(db, newaccount) {
+			fmt.Println("This account number already exist, use another")
+			return
+		}
 		fmt.Scanln(&HolderName)
 		fmt.Scanln(&newbalance)
 		fmt.Scanln(&password)
 
 		accountdetails := Account{AccountNo: newaccount, balance: newbalance, Holder: HolderName, Password: password}
+		//if account number already exists then print error this account already exists
+		// check both the password and account no
 
 		insertAccount(db, accountdetails)
 		acc, err := GetAccount(db, accountdetails.AccountNo, accountdetails.Password)
@@ -118,7 +141,7 @@ func main() {
 		}
 		fmt.Println("Account details ")
 		fmt.Println(acc.ID, acc.AccountNo, acc.Holder, acc.balance)
-		fmt.Println("If you want to check the amount only press(A) or deposit(D) or withdraw(W)")
+		fmt.Println("If you want to check the amount only press(A) or deposit(D) or withdraw(W) or Delete(DEL)")
 
 		var casse string
 		fmt.Scanln(&casse)
@@ -138,6 +161,21 @@ func main() {
 			lim := 1000.00
 			acc.Withdraw(withdrawn, lim)
 			fmt.Println("Total Amount Present:", acc.Getbalance())
+		case "DEL":
+			var confirmation string
+			fmt.Println("Are you sure you want to delete your account")
+			fmt.Scanln(&confirmation)
+			if confirmation == "Y" || confirmation == "y" {
+				err := DeleteAccount(db, acc.AccountNo, acc.Password)
+				if err != nil {
+					log.Fatal("Error deletiong account:", err)
+				}
+				fmt.Println("Account deleted successfully.")
+
+			} else {
+				fmt.Println("Account not deleted")
+			}
+
 		default:
 			fmt.Println("Try again, unable to process")
 
